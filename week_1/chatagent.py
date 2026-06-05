@@ -8,7 +8,7 @@ load_dotenv()
 
 class ChatAgent:
     def __init__(self, model_name="openrouter/free", max_turns=10):
-        # Initialize OpenRouter Client
+  
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=os.environ["OPENROUTER_API_KEY"],
@@ -16,10 +16,9 @@ class ChatAgent:
         self.model = model_name
         self.max_turns = max_turns
         
-        # Checklist: Chatbot holds a coherent conversation (Memory)
         self.history = [{"role": "system", "content": "You are a helpful and concise AI assistant.To save tokens keep answers on point "}]   # it was giving unnnecessary details hence had to define system prompt
 
-    # Checklist: Implement the earlier call_model as a method
+
     def call_model(self, prompt):
         
         self.history.append({"role": "user", "content": prompt})
@@ -57,30 +56,32 @@ class ChatAgent:
 
     def compact_history(self):
 
-        
-        compaction_prompt =("Summarize the core facts of this conversation in exactly one or two short, natural sentences. "
-            "Do not use bullet points and repetitions are discouraged . Skip all greetings, fluff, and do not announce that you are summarizing. "
-            "Just state the actual information discussed.")
-        temp_history = self.history.copy()
-        temp_history.append({"role": "user", "content": compaction_prompt})
-        
-        summary_response = self.client.chat.completions.create(
-            model=self.model,
-            messages=temp_history
-        )
-        
-        summary_text = summary_response.choices[0].message.content
-        
-        # Overwrite old history with just the new summary
-        self.history = [
+        try:
+            compaction_prompt =("Summarize the core facts of this conversation in exactly one or two short, natural sentences. "
+                "Do not use bullet points and repetitions are discouraged . Skip all greetings, fluff, and do not announce that you are summarizing. "
+                "Just state the actual information discussed.")
+            temp_history = self.history.copy()
+            temp_history.append({"role": "user", "content": compaction_prompt})
+            
+            summary_response = self.client.chat.completions.create(
+                model=self.model,
+                messages=temp_history
+            )
+            
+            summary_text = summary_response.choices[0].message.content
+            
+            # Overwrite old history with just the new summary
+            self.history = [
 
-# -------------------after it summarises then delete won't function properly---------------
-            # {"role": "system", "content": f"You are a helpful assistant. Here is a summary of the conversation so far: {summary_text}"}    
+    # -------------------after it summarises then delete won't function properly---------------
+                # {"role": "system", "content": f"You are a helpful assistant. Here is a summary of the conversation so far: {summary_text}"}    
 
-         {"role":"system","content":"You are a helpful assitant"},
-         {"role":"system","content":f"Here is the summary so far....\n {summary_text}"}
-        ]
-        print("The summarised conversation for you : \n",summary_text)
+            {"role":"system","content":"You are a helpful assitant"},
+            {"role":"system","content":f"Here is the summary so far....\n {summary_text}"}
+            ]
+            print("The summarised conversation for you : \n",summary_text)
+        except Exception as e:
+            print("Unable to process request due to  ",e)
     
     def delete_memory(self): 
 
