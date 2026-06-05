@@ -84,7 +84,7 @@ class ChatAgent:
             print("Unable to process request due to  ",e)
     
     def delete_memory(self): 
-
+        # self.history.clear()      
         del self.history[1:]      #the system prompt need to be there in history
         print("Assistant : ","All the history cleared")
         
