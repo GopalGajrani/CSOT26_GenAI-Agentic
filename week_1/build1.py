@@ -30,7 +30,7 @@ def call_model(prompt: str) -> str:
     )
     
     # print(response)
-    print(response.choices) #-------->gives a huge list which has a lot of information in it including role, message,function_call, tool_call,reasoning and many more details
+    # print(response.choices) #-------->gives a huge list which has a lot of information in it including role, message,function_call, tool_call,reasoning and many more details
     # response.usage     ------->tell me about the tokens used in input,output,total_tokens 
     ans=response.choices[0].message.content
     return ans
