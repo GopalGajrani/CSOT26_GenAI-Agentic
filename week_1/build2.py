@@ -32,11 +32,39 @@ def run_chatbot():
 
     while True:
         # TODO: take user input
+        user_input = input("You: ").strip()
+        
+        
+        if user_input.lower()=="exit":
+            print("Goodbye!")
+            break
+            
+        if not user_input:
+            continue
+
         # TODO: append the user turn to messages
-        # TODO: call the API with the full messages list
-        # TODO: extract the assistant's reply
-        # TODO: append the assistant turn to messages
-        # TODO: print the reply
+        messages.append({"role": "user", "content": user_input})
+        
+        try:
+            # TODO: call the API with the full messages list
+            response = client.chat.completions.create(
+                model="openrouter/free",
+                messages=messages
+            )
+
+            # TODO: extract the assistant's reply
+            ans = response.choices[0].message.content
+            
+            # TODO: print the reply
+            print(f"Assistant: {ans}\n")
+            
+            # TODO: append the assistant turn to messages
+            messages.append({"role": "assistant", "content": ans})
+            
+        except Exception as e:
+            print("Assistant: Sorry, unable to fulfill your request now.\n")
+            messages.pop()  
+
         pass
 
 if __name__ == "__main__":
