@@ -32,7 +32,7 @@ class ChatAgent:
 
             ans=response.choices[0].message.content
             print("Assistant : ",ans)
-            print() #clean new line to avoid output being messy 
+            print()       #clean new line to avoid output being messy 
             
         except Exception as e:
             print("Sorry, unable to fulfill you request now.")
