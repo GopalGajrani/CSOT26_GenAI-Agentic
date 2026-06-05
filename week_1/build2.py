@@ -19,7 +19,7 @@ def run_chatbot():
     - Append the assistant's reply to `messages` after each call.
     - Resend the full history on every API call.
     - Allow the user to type 'exit' or 'quit' to end the session.
-
+    
     Stretch:
     - Add a '/reset' command that clears history so you can feel context loss live.
     - Add a '/tokens' command that prints response.usage after the last call.
