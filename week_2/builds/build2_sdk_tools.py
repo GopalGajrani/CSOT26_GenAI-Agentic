@@ -33,7 +33,7 @@ client = OpenAI(
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 
-MODEL = "deepseek/deepseek-v4-flash:free"
+MODEL = "openrouter/free"
 
 # ---------------------------------------------------------------------------
 # Tool schemas (the contract between you and the model)
@@ -102,7 +102,25 @@ def get_weather(city: str, unit: str = "celsius") -> dict:
         {"city": city, "temperature": 28, "unit": unit, "condition": "partly cloudy"}
     """
     # TODO: implement (hardcode some reasonable values)
-    pass
+    if city.lower()=="delhi":
+        temp=45
+        cond="Sunny"
+    elif city.lower()=="tokyo":
+        temp=35
+        cond="Partly Sunny"
+    elif city.lower()=="london":
+        temp=15
+        cond="Cloudy"
+    else:
+        temp=28
+        cond="partly cloudy"
+    return({
+        "city":city,
+        "temperature":temp,
+        "unit": unit, 
+        "condition": cond}
+    )
+    # pass
 
 
 def calculate(expression: str) -> dict:
@@ -112,7 +130,16 @@ def calculate(expression: str) -> dict:
     Return {"result": value} or {"error": message}.
     """
     # TODO: implement
-    pass
+    try:
+        result = eval(
+            expression,
+            {"__builtins__": {}},  # block all builtins
+            {}
+        )
+        return {"result": result}
+    except Exception as e:
+        return {"error": str(e)}
+    # pass
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +165,24 @@ def dispatch(tool_call) -> str:
     Note: tool_call.function.arguments is a *string*, not a dict. Parse it first.
     """
     # TODO: implement
-    pass
+    tool_name=tool_call.function.name
+    if tool_name not in TOOL_REGISTRY:
+        result={"error":f"Unknown tool {tool_name}"}
+        return json.dumps(result)
+
+    
+    try:
+        arguments=json.loads(tool_call.function.arguments)
+        result=TOOL_REGISTRY[tool_name](**arguments)
+
+    except Exception as e:
+        result={"error":str(e)}
+    
+    return json.dumps(result)
+
+    
+
+    # pass
 
 
 # ---------------------------------------------------------------------------
@@ -182,9 +226,30 @@ def run_agent(user_message: str) -> str:
         message = response.choices[0].message
         finish_reason = response.choices[0].finish_reason
 
+        
         # TODO: handle finish_reason == "tool_calls"
         # TODO: handle finish_reason == "stop"
-        pass
+
+        if finish_reason == "stop":
+            return message.content
+    
+        if finish_reason=="tool_calls":
+            messages.append(message)
+            for tool_call in message.tool_calls:
+                # import sys
+                # print(f"Executed loop {_+1} for {tool_call}",file=sys.stderr)    ---->    #tokens getting exceeded hence commented this line 
+                result=dispatch(tool_call)
+
+                messages.append({
+                    "role":"tool",
+                    "tool_call_id":tool_call.id,
+                    "content":result
+
+                })
+
+
+
+        # pass
 
     return f"[Agent stopped after {MAX_ITERATIONS} iterations without a final answer]"
 
