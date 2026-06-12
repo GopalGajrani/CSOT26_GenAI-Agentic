@@ -46,7 +46,7 @@ client = OpenAI(
     api_key=os.environ["OPENROUTER_API_KEY"],
 )
 
-MODEL = "deepseek/deepseek-v4-flash:free"
+MODEL = "openrouter/free"
 
 SYSTEM_PROMPT = """You are a helpful file assistant with access to the following tools:
 
@@ -54,13 +54,15 @@ SYSTEM_PROMPT = """You are a helpful file assistant with access to the following
 - write_file(path: str, content: str): writes content to a file on disk
 
 When you need to use a tool, emit EXACTLY this format and nothing else after it:
-
+only this format if you you require using any tool -
 <tool_call>
 {"name": "TOOL_NAME", "arguments": {"arg1": "value1"}}
 </tool_call>
 
 After you receive the tool result in a <tool_response> block, continue your response
-normally. Do not emit a tool_call and prose in the same turn. Pick one or the other.
+normally. Do not emit a tool_call and prose in the same turn. Pick one or the other keep this in mind .
+Do NOT ever write the <tool_response> tag yourself. The system will provide that to you on the next turn.
+If you have all the information needed to answer the user's request, do NOT use a tool. Just write a normal conversational answer without any tags.
 """
 
 # ---------------------------------------------------------------------------
@@ -74,7 +76,14 @@ def read_file(path: str) -> dict:
     Return {"error": ...} if the file doesn't exist or can't be read.
     """
     # TODO: implement using open() in a try/except
-    pass
+    try:
+        with open(path,"r") as file:
+            content=file.read()
+            return{"content":content,"path":path}
+        
+    except Exception as e:
+        return{"error": str(e)}
+    # pass
 
 
 def write_file(path: str, content: str) -> dict:
@@ -86,7 +95,16 @@ def write_file(path: str, content: str) -> dict:
     Hint: open(path, 'w') and then f.write(content).
     """
     # TODO: implement
-    pass
+    
+    try:
+        with open(path,"w") as file:    
+            bytes_written=file.write(content)
+
+        return{"success":True,"path":path,"bytes_written":bytes_written}
+    except Exception as e:
+        print("Error in writing.")
+        return{"error":str(e)}
+    # pass
 
 
 # ---------------------------------------------------------------------------
@@ -108,8 +126,19 @@ def parse_tool_call(response_text: str) -> dict | None:
     Hint: use re.search() with re.DOTALL to find the block, then json.loads() the body.
     """
     # TODO: implement
-    pass
-
+    pattern=r"<tool_call>(.*?)</tool_call>"
+    match=re.search(pattern,response_text,re.DOTALL)
+    
+    if not match:
+        return None
+    body=match.group(1).strip()
+    try:
+        result=json.loads(body)
+        return result
+    except Exception as e:
+        "Error in parse_tool_call"
+        return None
+        
 
 def strip_tool_call(response_text: str) -> str:
     """
@@ -117,7 +146,10 @@ def strip_tool_call(response_text: str) -> str:
     Useful for printing the model's prose without the raw tag.
     """
     # TODO: implement (re.sub is your friend)
-    pass
+    pattern=r"<tool_call>(.*?)</tool_call>"
+    stripped_text=re.sub(pattern,"",response_text,flags=re.DOTALL)
+    # pass
+    return stripped_text.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +172,17 @@ def dispatch(name: str, arguments: dict) -> str:
     Always return a string (json.dumps the result dict).
     """
     # TODO: implement
-    pass
+
+    try:
+        if name not in TOOL_REGISTRY:
+            return json.dumps({"error": f"Unknown tool: {name}"})
+        result = TOOL_REGISTRY[name](**arguments)
+    except Exception as e:
+        print("Error in dispatch")
+        result = {"error": str(e)}
+    return json.dumps(result)
+
+    # pass
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +220,31 @@ def run_agent(user_message: str) -> str:
 
     for iteration in range(MAX_ITERATIONS):
         # TODO: call the model, parse the response, dispatch or return
-        pass
+        completion=client.chat.completions.create(
+            model=MODEL,
+            messages=messages
+        )
+        response_txt=completion.choices[0].message.content
+        if response_txt is None:
+            response_txt=""
+
+        # print(f"DEBUG: Raw Model Output: Clear text -> '{response_txt}'")
+
+        tool_call=parse_tool_call(response_txt)
+
+        # print(f"DEBUG Loop {iteration+1} - parser returned: {tool_call}")
+
+        if not tool_call:
+            return strip_tool_call(response_txt)
+        import sys
+        print(f"Loop {iteration+1} Agent calling tool : {tool_call["name"]}",file=sys.stderr)
+        tool_result=dispatch(tool_call["name"],tool_call["arguments"])
+        # print("tool_result :",tool_result)
+        messages.append({"role":"assistant","content":response_txt})
+        messages.append({"role":"user",
+                         "content":f"<tool_response>\n{tool_result}\n</tool_response>"})
+
+        # pass
 
     return f"[Agent stopped after {MAX_ITERATIONS} iterations]"
 
