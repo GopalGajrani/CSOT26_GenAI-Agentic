@@ -1,6 +1,7 @@
+requests
+trafilatura
+httpx
 openai
 python-dotenv
-requests
-markdownify
-trafilatura
+mcp
 textual
