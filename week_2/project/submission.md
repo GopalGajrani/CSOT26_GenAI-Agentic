@@ -7,7 +7,7 @@ The main loop allows 10 iteration per query where in each iteration the conversa
 
 Key design decision--->
 I preferred first looking for llm.txt file if it exists then if it not then max characters of 8000 as context window may exceed as there is not limit on the content on website .
-ONe thing which i really liked in my ui is it has a running clock . 
+ONe thing which i really liked in my ui is it has a running clock . And i don't know why but its strange that i asked it who won ipl 2026  it told me correctly but when i asked him todays's date it told 11 june thursay and when i asked current year it said 2025 which is a contradiction and earlier as well it did suffer with this prob so i had to tell it current year so that it doesnt do same mistake again .ANd i asked to cite resource as well so that we can know if it access correct website or not , it helped me in figuring out some of its error like when i asked it ipl 2019 winner it told kkr and given me link for 2014 final report . 
 
 
 
