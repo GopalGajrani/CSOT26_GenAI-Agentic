@@ -394,11 +394,16 @@ class ResearchApp(App):
             log.write("[bold yellow]System:[/] No active message interactions to save yet.\n")
             return
         try:
-            filename = f"research_history_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            with open(filename, "w", encoding="utf-8") as f:
+        
+            notes_dir = "notes"
+            os.makedirs(notes_dir, exist_ok=True)
+            
+            # 2. Generate the timestamped filename
+            base_filename = f"research_history_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            filepath = os.path.join(notes_dir, base_filename)
+            with open(filepath, "w", encoding="utf-8") as f:
                 for log_line in self.session_log:
                     f.write(f"{log_line}\n\n")
-            log.write(f"[bold green]Research log saved successfully to {filename}[/bold green]\n")
         except Exception as e:
             log.write(f"[bold red]Failed to write text capture dump file:[/] {str(e)}\n")
 
