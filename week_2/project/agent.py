@@ -234,9 +234,9 @@ class ResearchApp(App):
     
     BINDINGS = [
         Binding("ctrl+l", "clear_display", "Clear Display"),
-        Binding("ctrl+k", "clear_history", "Clear History"),
+        Binding("ctrl+h", "clear_history", "Clear History"),
         Binding("ctrl+s", "save_chat", "Save Chat"),
-        Binding("ctrl+q", "quit", "Quit"),
+        Binding("ctrl+0", "quit", "Quit"),
         # Binding("ctrl+r","force_reauth","Re-authenticate")
     ]
 
