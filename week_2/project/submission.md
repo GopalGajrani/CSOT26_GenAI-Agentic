@@ -1,0 +1,23 @@
+From all the modules which i used , modules like os, asyncio, json, webbrowser, datetime, urllib.parse, and http.server are built into Python. Navigate to week_2/project/ and run pip install -r requirements.txt to install the external packages(required for this weeks task): requests, trafilatura, httpx, openai, python-dotenv, mcp, and textual.TO run the agent you need api key so for that just copy the.env.example file and name it as '.env'  and place your actual api keys . Then you are good to run the agent.py your on perplexity research agent .
+Agent loop--->
+
+I built a research agent similar to perplexity with a interactive user interface using textual, it has a running clock on the top right corner and option to clear chat history , or quit the chat, or clear display or save the chat in the bottom of the interface.It is capable of web search the content and also helps you in research as can access research papers from AlphaXiv server which we connected using mcp and the most hectic part was to solve the auth connection which i intially didn;t knew about but the file sent on whatsapp did helped in a way . But one issue is what i noticed even if you just want to share something with the agent like your personal info still it will first ask you for login on the AlphaXiv which is a flaw . The agent loop ensures the ui is responsive after submission of query by intializing MCP server over HTTP to communicate wirh alphaxiv . 
+The main loop allows 10 iteration per query where in each iteration the conversation history and tool requiremetns are passed to model, if it not require any tool means has got the answer and returns it otherwise uses that tool and proceed to next iteration. if the model requests a tool call, the app identifies the target tool, executes it synchronously using `asyncio.to_thread` to prevent freezing the TUI event loop, appends the result to the messages history array, and feeds it back into the model for the next turn. 
+
+
+Key design decision--->
+I preferred first looking for llm.txt file if it exists then if it not then max characters of 8000 as context window may exceed as there is not limit on the content on website .
+ONe thing which i really liked in my ui is it has a running clock . 
+
+
+
+thing that surprised me--->
+first to i thought ki we would develop ui as in the harness video sent in the whatsapp grp but when i ran the sample code of tui as lesson 4 it was different, and also that my models gave correct ans eassily using sdk but with hand written tools it was so troublesome , infact making build1 took a lot of time, also there was a lot to learn this week as compared to week1 but at the same time for me it was quite overwhelmming , managing all this new terminologies , firstly  to whenever i saw json i used to run away from it , i never tried understanding what it is earlier i have seen score.json type of files but not really knew what it actually was but now i got to some function aboutit,like json.dumps json.loads, what json string and schema is .Ans borrowing tools from a mcp server was quite interesting which saves a lot of time , 
+
+
+things that didn't work--->
+as expected i was not able to use any other model except openrouter/free, i don't know why always github repo has model deepseek,it never worked for me , i also tried using different models but none worked except openrouter/free.i faced a difficulty as i mentioned it was quite overwhelming for me who is first time into this gen ai thing , but finally things did worked , just few recommendation a more detailed readme and steps to proceed in more details would be highly highly appreciated and if video resources are available then it a bonus as it is not always the case that one may be comfortable with everything in the code like i was not comfortable with parsing json initially.
+
+
+what improvement if extra time-->
+One thing that is obvious is tui , keep it more interactive with covering bonus challenges and making it visually more appealing , also i would try correcting few errors or flaws which my code has like if agent ask for a login but if you not respond than it will keep waiting instead one could simply close that , ans also as stated above that ask login only when it required to discover papers when we are just telling it some info then it is not required and wanted to add reauthentication feature if someone wants to reauthenticate.
