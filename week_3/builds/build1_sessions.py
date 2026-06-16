@@ -84,16 +84,12 @@ def list_sessions() -> list[dict]:
 
 
 def build_system_prompt() -> str:
-    """Base prompt + AGENTS.md if it exists."""
-    # TODO: implement
-    for path in AGENTS_PATHS:
-        if os.path.exists(path):
-            with open(path,"r") as f:
-                content=f.read()
-            final_str=BASE_PROMPT+content
-            return final_str
-    
-    return BASE_PROMPT
+    parts = [BASE_PROMPT]
+    for path in ("AGENTS.md", ".agent/AGENTS.md"):
+        if os.path.isfile(path):
+            parts.append(f"## Project rules\n{open(path).read()}")
+            break
+    return "\n\n".join(parts)
     # pass
 
 
