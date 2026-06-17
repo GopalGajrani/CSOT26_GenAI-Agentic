@@ -19,8 +19,8 @@ import os
 from nanoid import generate
 from datetime import datetime, timezone
 
-SESSIONS_DIR = "./week_3/agent/sessions"
-AGENTS_PATHS = ("AGENTS.md", ".week_3/agent/AGENTS.md")
+SESSIONS_DIR = ".agent/sessions"
+AGENTS_PATHS = ("AGENTS.md", ".agent/AGENTS.md")
 
 BASE_PROMPT = "You are Research Desk, a helpful research assistant."
 
@@ -35,9 +35,9 @@ def create_session() -> str:
 
 
 def save_session(session_id: str, messages: list, title: str = "Untitled") -> None:
-    """Write session JSON to ./week_3/agent/sessions/{id}.json"""
+    """Write session JSON to .agent/sessions/{id}.json"""
     # TODO: implement
-    with open(f".//week_3/agent/sessions/{session_id}.json","w") as f:
+    with open(f".agent/sessions/{session_id}.json","w") as f:
         session_dict={
             "id":session_id,
             "title":title,
@@ -46,7 +46,7 @@ def save_session(session_id: str, messages: list, title: str = "Untitled") -> No
                        
         }
         f.write(json.dumps(session_dict))
-    return(f"Session saved successfully to ./week_3/agent/sessions/{session_id}.json")            
+    return(f"Session saved successfully to .agent/sessions/{session_id}.json")            
     # pass
 
 
@@ -54,7 +54,7 @@ def load_session(session_id: str) -> dict:
 
     """Load and return session dict including messages list."""
     # TODO: implement
-    with open(f"./week_3/agent/sessions/{session_id}.json","r") as f:
+    with open(f".agent/sessions/{session_id}.json","r") as f:
         session_dict=json.load(f)
     return session_dict
     pass
@@ -63,8 +63,8 @@ def load_session(session_id: str) -> dict:
 def list_sessions() -> list[dict]:
     """Return sessions sorted by updated_at descending."""
     session_list=[]
-    for file in os.listdir("./week_3/agent/sessions"):
-        file_path=os.path.join("./week_3/agent/sessions",file)
+    for file in os.listdir(".agent/sessions"):
+        file_path=os.path.join(".agent/sessions",file)
         with open(file_path,"r") as f:
             try:
                 dict_file=(json.load(f))
@@ -85,7 +85,7 @@ def list_sessions() -> list[dict]:
 
 def build_system_prompt() -> str:
     parts = [BASE_PROMPT]
-    for path in ("AGENTS.md", "./week_3/agent/AGENTS.md"):
+    for path in ("AGENTS.md", ".agent/AGENTS.md"):
         if os.path.isfile(path):
             parts.append(f"## Project rules\n{open(path).read()}")
             break
