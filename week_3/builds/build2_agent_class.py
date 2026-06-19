@@ -159,7 +159,7 @@ def list_files(path: str = ".", pattern: str = "*") -> dict:
 
 
 
-TOOLS = [
+FILES_SCHEMA = [
     {
         "type": "function",
         "function": {
@@ -417,7 +417,7 @@ class Agent:
             response = client.chat.completions.create(
                 model=MODEL,
                 messages=self.messages,
-                tools=TOOLS,
+                tools=FILES_SCHEMA,
                 tool_choice="auto"
             )
 
