@@ -426,7 +426,7 @@ class Agent:
             # Build the assistant message dict
             msg_dict = {
                 "role": "assistant",
-                "content": response_message.content
+                "content": response_message.content or ""
             }
 
             if response_message.tool_calls:
@@ -465,11 +465,14 @@ class Agent:
         
         name=tool_call.function.name
         try:
+            
             args=json.loads(tool_call.function.arguments)
         except:
             return json.dumps({"error":f"invalid json arguments"})
         if name in tool_registry:
             try:
+                if isinstance(result, str):
+                    return result
                 result=tool_registry[name](**args)
                 return json.dumps(result)
             except:
