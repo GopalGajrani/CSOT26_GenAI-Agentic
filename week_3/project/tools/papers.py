@@ -25,7 +25,53 @@ load_dotenv(dotenv_path=env_file_path)
 my_token=os.environ.get("HF_TOKEN")
 
 
-
+PAPER_SCHEMA = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_paper",
+            "description": (
+                "Search for academic research papers on Hugging Face Daily Papers. "
+                "Use this tool to find relevant papers, discover concepts, and obtain Arxiv IDs."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search term topic or title fragments to look up (e.g., 'large language models')."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "The maximum number of paper results to return.",
+                        "default": 5
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_paper",
+            "description": (
+                "Fetch full details of a specific paper, including title, publication date, authors, "
+                "and raw markdown document body content text using an Arxiv ID string."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "arxiv_id": {
+                        "type": "string",
+                        "description": "The structured Arxiv ID identifier extracted from search results (e.g., '2108.07732')."
+                    }
+                },
+                "required": ["arxiv_id"]
+            }
+        }
+    }
+]
 def search_paper(query:str,limit:int=5):
     url="https://huggingface.co/api/papers/search"
     query_params={
