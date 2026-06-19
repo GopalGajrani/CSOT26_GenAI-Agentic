@@ -360,7 +360,6 @@ class Agent:
             "id": self.session_id,
             "title": title,
             "updated_at": f"{datetime.now(timezone.utc)}",
-            # 👉 FIX: Read directly from the class state memory array variable
             "messages": self.messages, 
         }
         
@@ -371,25 +370,33 @@ class Agent:
 
     def load_session(self, session_id: str) -> dict:
         """Load and return session dict including messages list."""
-     
+
         folder = os.path.join(self.workspace, ".agent", "sessions")
         filepath = os.path.join(folder, f"{session_id}.json")
-        
+        system_msg = {"role": "system", "content": build_system_prompt()}
+
         if os.path.exists(filepath):
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     session_dict = json.load(f)
-                    return session_dict  
+
+                msgs = session_dict.get("messages", [])
+                # Always refresh system prompt — existing sessions may have a stale one
+                if msgs and msgs[0].get("role") == "system":
+                    msgs[0] = system_msg          # replace old system prompt
+                else:
+                    msgs.insert(0, system_msg)    # inject if missing entirely
+                session_dict["messages"] = msgs
+                return session_dict
             except Exception as e:
-                # Fallback dictionary if file reading fails
-                return {"error": str(e), "messages": []}
-        
-        # If no file exists, return a fresh session structure dictionary
+                return {"error": str(e), "messages": [system_msg]}
+
+        # Fresh session — no file yet
         return {
             "id": session_id,
             "title": "Untitled",
-            "messages": [{"role": "system", "content": build_system_prompt()}]
-        }   
+            "messages": [system_msg],
+        }
     def chat(self, user_message: str) -> str:
         # TODO: append user msg, _run_loop(), save session, return answer
         self.messages.append({"role":"user","content":user_message})
@@ -498,15 +505,30 @@ class REPLAgent(Agent):
 
 
 def build_system_prompt() -> str:
-    return "You are an elite research file agent. Use your tools responsibly."
-    pass
+    return (
+        "You are an elite research file agent. Use your tools responsibly.\n"
+        "Session files are stored as JSON at: .agent/sessions/<session_id>.json\n"
+        "To read a session by ID, call read_file with path '.agent/sessions/<id>.json'.\n"
+        "Always use list_files to discover files before reading them.To use any tool don't ask for user perission."
+    )
 
 
 def main():
-    agent = REPLAgent()
-    if len(sys.argv) > 1:
+    session_id = None
+
+    # Support:  python build2_agent_class.py --session <id>
+    if "--session" in sys.argv:
+        idx = sys.argv.index("--session")
+        if idx + 1 < len(sys.argv):
+            session_id = sys.argv[idx + 1]
+            sys.argv = sys.argv[:idx] + sys.argv[idx + 2:]  # strip flag + value
+
+    agent = REPLAgent(session_id=session_id)
+
+    if len(sys.argv) > 1:                          # one-shot prompt
         print(agent.run_once(" ".join(sys.argv[1:])))
         return
+
     agent.run()
 
 
