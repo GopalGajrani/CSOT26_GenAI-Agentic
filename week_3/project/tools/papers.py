@@ -72,6 +72,7 @@ PAPER_SCHEMA = [
         }
     }
 ]
+
 def search_paper(query:str,limit:int=5):
     url="https://huggingface.co/api/papers/search"
     query_params={
@@ -138,5 +139,10 @@ def read_paper(arxiv_id:str):
         paper_content='unknown'
     
     return (f"TITLE : {title}\n\nPUBlISHED DATE: {date}\n\nAUTHOR NAMES :\n{'\n'.join(author_names)}\n\nCONTENT :\n{paper_content}")
-text = read_paper("2108.07732")
-print(text)
+# text = read_paper("2108.07732")
+# print(text)
+
+PAPER_REGISTRY={
+    "search_paper":search_paper,
+    "read_paper":read_paper,
+}
