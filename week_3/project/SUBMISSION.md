@@ -14,3 +14,10 @@ Importing tools and functions from one file to another was new to me , i didn't 
 But this week content i felt was not in detail , at some point i was stucked for hours and kept searching for relevant sources , as a beginner it is not easy to get comfortable with these new things so onlu thing i would say is which i am saying from past 2 weeks a more detailed content would be appreciated and a proper starting guide of how and where to start and TODO points more specified in the code, because while working was this i lagged confidence at many points wether I am doing correct or not . 
 
 This week i had a better clarity of what I am doing and the proper workflow but it took long to gain that understanding . And this week task was much based on smaller components and then integrating them into a Research desk , hence i had to be very focused in making my smaller elements (tools).
+
+Technical Design Decisions-
+Line-based File Edits and Diff Previews -> Instead of allowing the LLM to rewrite entire files (which is error-prone and context-heavy), the agent uses line-based editing. The read_file tool returns line numbers prefixed to each line (e.g., 1 : text). The edit_file tool then expects exact line ranges (start_line to end_line) and an operation (insert, replace, delete, append)
+
+Sandbox Enforcement via resolve_path -> To prevent the agent from escaping the project directory and preventing it from accessing sensitive system files (e.g., /etc/passwd), all file tools has to check resolve_path function first. It uses os.path.abspath(os.path.join(WORKSPACE_ROOT, path)) and verifies that the resulting absolute path starts with the WORKSPACE_ROOT. If it doesn't, it immediately raises a ValueError("Path escapes workspace").
+
+Session History Streaming and Persistence-> sessions are saved to .agent/sessions/<id>.json and instead of blindly appending the raw messages to LLM upon reload , it also updates system prompt so that it system prompt remains uptodate.
