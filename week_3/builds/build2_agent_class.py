@@ -120,11 +120,12 @@ def edit_file(
         if  not safe_content.endswith('\n'):
             safe_content+='\n'
         op=operation.lower().strip()
+        new_lines = safe_content.splitlines(keepends=True)
         if op=="insert":
             #inserting at start index
             lines.insert(start_idx,safe_content)
         elif op=="replace":
-            lines[start_idx:end_idx+1]=safe_content
+            lines[start_idx:end_idx+1]=new_lines
         elif op=="delete":
             del lines[start_idx:end_idx+1]
         else:
@@ -136,7 +137,7 @@ def edit_file(
         return {"status":"success","message":"edited file successfully"}
 
     except Exception as e:
-        return {"error :":str(e)}
+        return {"error":str(e)}
 
     # pass
 
@@ -295,7 +296,7 @@ FILES_SCHEMA = [
                     "operation": {
                         "type": "string",
                         "description": "The type of edit action to perform. Currently supports: 'insert'.",
-                        "enum": ["insert"]
+                        "enum": ["insert","replace","delete"]
                     },
                     "start_line": {
                         "type": "integer",
@@ -402,7 +403,7 @@ class Agent:
         self.messages.append({"role":"user","content":user_message})
 
         answer=self._run_loop()
-        self.save_session(title=user_message[:10])
+        self.save_session(title=user_message[:5])
         return answer
         
         pass
@@ -446,7 +447,7 @@ class Agent:
 
             # If NO tool calls → model is done, return the final answer
             if not response_message.tool_calls:
-                return response_message.content or "[Agent] No response."
+                return response_message.content or "[Agent] Finished task"
 
             # Otherwise, dispatch each tool call
             for tc in response_message.tool_calls:
@@ -471,9 +472,10 @@ class Agent:
             return json.dumps({"error":f"invalid json arguments"})
         if name in tool_registry:
             try:
+                result=tool_registry[name](**args)
                 if isinstance(result, str):
                     return result
-                result=tool_registry[name](**args)
+                
                 return json.dumps(result)
             except:
                 return json.dumps({"error":"tool execution failed"})
@@ -498,6 +500,14 @@ class REPLAgent(Agent):
                 print()
                 break
             if not user_input or user_input in ("/quit", "/exit"):
+                print("\n[System] Asking agent to save final notes before exiting...")
+                
+                # Send a hidden prompt to force the agent to save notes
+                self.chat("We are ending the session now. Please quickly summarize what we discussed and use your write_file tool to save it into the notes/ folder.")
+                
+                print("[System] Goodbye!")
+
+
                 break
             print(self.chat(user_input))
             print()
@@ -508,13 +518,17 @@ class REPLAgent(Agent):
 
 
 def build_system_prompt() -> str:
-    return (
-        "You are an elite research file agent. Use your tools responsibly.\n"
-        "Session files are stored as JSON at: .agent/sessions/<session_id>.json\n"
-        "To read a session by ID, call read_file with path '.agent/sessions/<id>.json'.\n"
-        "Always use list_files to discover files before reading them.To use any tool don't ask for user perission."
-    )
-
+    agents_path = os.path.join(WORKSPACE_ROOT, "AGENTS.md")
+    try:
+        with open(agents_path, "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return (
+            "You are an elite research file agent. Use your tools responsibly.\n"
+            "Session files are stored as JSON at: .agent/sessions/<session_id>.json\n"
+            "To read a session by ID, call read_file with path '.agent/sessions/<id>.json'.\n"
+            "Always use list_files to discover files before reading them."
+        )
 
 def main():
     session_id = None
