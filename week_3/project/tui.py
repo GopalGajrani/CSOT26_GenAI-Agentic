@@ -37,7 +37,7 @@ class TUIAgent(App, Agent):
     BINDINGS = [
         ("ctrl+l", "clear_display", "Clear Display"),
         ("ctrl+h", "clear_history", "Clear History"),
-        ("ctrl+0", "quit", "Quit"),
+        ("ctrl+0", "quit_app", "Quit"),
         
     ]
     def __init__(self, session_id=None):
@@ -87,6 +87,15 @@ class TUIAgent(App, Agent):
         # Disable the input box so the user can't type while it saves
         self.query_one(Input).disabled = True
         self.process_quit()
+
+    def action_clear_history(self) -> None:
+        """Wipes the in-memory conversation history (starts fresh)."""
+        self.messages = [self.messages[0]]  # keep only the system prompt!
+        self.query_one(RichLog).write("[System] Conversation history cleared.")
+
+    def action_clear_display(self) -> None:
+        """Clears the visible chat log panel."""
+        self.query_one(RichLog).clear()
 
     @work(exclusive=True, thread=True)
     def process_chat(self, user_input: str) -> None:
