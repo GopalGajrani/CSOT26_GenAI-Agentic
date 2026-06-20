@@ -26,8 +26,8 @@ from nanoid import generate
 from datetime import datetime,timezone
 
 script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/builds
-week_3_parent = os.path.dirname(script_location)
-WORKSPACE_ROOT = os.path.join(week_3_parent, "project")
+week_3_parent = os.path.dirname(script_location)    #.../week_3
+WORKSPACE_ROOT = os.path.join(week_3_parent, "project")    #.../week_3/project
 MAX_ITERATIONS = 10
 MAX_READ_CHARS = 12_000
 env_file_path = os.path.join(WORKSPACE_ROOT, ".env")
