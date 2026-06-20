@@ -24,8 +24,8 @@ from nanoid import generate
 from datetime import datetime,timezone
 
 
-script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/builds
-week_3_parent = os.path.dirname(script_location)
+script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/project
+week_3_parent = os.path.dirname(script_location)      #.../week_3
 WORKSPACE_ROOT = os.path.join(week_3_parent, "project")
 MAX_ITERATIONS = 10
 MAX_READ_CHARS = 12_000
@@ -197,7 +197,7 @@ class Agent:
         if name in self.tool_registry:
             try:
                 result=self.tool_registry[name](**args)
-                if isinstance(result, str):
+                if isinstance(result, str):           #if tool call is resolve_path then it already return a string 
                     return result
                 
                 return json.dumps(result)
