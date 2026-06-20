@@ -44,18 +44,20 @@ def read_file(path: str, start_line: int = 1, read_lines: int = 200,original:boo
         if original :           #if we just want the content without indexing 
             return{
                 "total_lines":len(content),
-                "content":content
+                "content":content,
+                "has_more": (start_line + read_lines - 1) < len(content),
             }
         
         content_dict={
             "total_lines":len(content),
             "content":indexed_content[start_line-1:start_line+read_lines-1],
+            "has_more": (start_line + read_lines - 1) < len(content),
         }
 
         return content_dict
 
     except Exception as e:
-        return {"error : ":str(e)}
+        return {"error":str(e)}
 
     # pass
 
@@ -67,10 +69,9 @@ def write_file(path: str, content: str) -> dict:
 
 
         if os.path.exists(is_path):
-            # Split the path into the name and the extension (e.g. '.md')
+            #this because while saving notes if there already exists a file with same name so to differentiate the two
             base, ext = os.path.splitext(is_path)
             counter = 1
-            # Keep counting until we find a filename that doesn't exist
             while os.path.exists(f"{base} ({counter}){ext}"):
                 counter += 1
             is_path = f"{base} ({counter}){ext}"
@@ -90,13 +91,14 @@ def edit_file(
     path: str,
     operation: str,
     start_line: int,
-    end_line: int | None = None,
+    end_line: int=200,
     content: str | None = None,
 ) -> dict:
     try:
         # if_path=resolve_path(path)
         #readfile first before editing 
-        file_read=read_file(path,start_line,end_line-start_line,True)
+        # read_file already covers resolve_path
+        file_read=read_file(path,start_line,end_line-start_line,True)     
         if "error" in file_read:
             return {"status": "error", "message": file_read["error"]}
         
@@ -113,6 +115,9 @@ def edit_file(
             safe_content+='\n'
         op=operation.lower().strip()
         new_lines = safe_content.splitlines(keepends=True)
+        # for difference view
+        before_lines = lines[start_idx:end_idx+1] if op != "append" else []
+
         if op=="insert":
             #inserting at start index
             lines.insert(start_idx,safe_content)
@@ -120,13 +125,30 @@ def edit_file(
             lines[start_idx:end_idx+1]=new_lines
         elif op=="delete":
             del lines[start_idx:end_idx+1]
+        elif op=="append":
+            lines.extend(new_lines)
         else:
-            return {"status":"error","message":f"currently i am not trained for {op} operation"}
-        
+            return {"status":"error","message":f"unknown operation '{op}'. Use: replace, delete, append, insert"}
+         
+
+        # write the changes in the original file 
         resolved = resolve_path(path)
         with open(resolved, "w") as f:
             f.writelines(lines)
-        return {"status":"success","message":"edited file successfully"}
+
+        # Built a simple diff preview to show what changed
+        diff_lines = []
+        for line in before_lines:
+            diff_lines.append(f"- {line.rstrip()}")
+        for line in new_lines:
+            diff_lines.append(f"+ {line.rstrip()}")
+        diff_preview = "\n".join(diff_lines) if diff_lines else "(no diff — append or delete)"
+
+        return {
+            "status": "success",
+            "message": f"'{op}' applied to lines {start_line}–{end_line}",
+            "diff": diff_preview
+        }
 
     except Exception as e:
         return {"error":str(e)}
