@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=env_file_path)
 
 my_token=os.environ.get("HF_TOKEN")
-
+from tools.web import smart_fetch, web_search as _web_search
 
 PAPER_SCHEMA = [
     {
@@ -88,8 +88,10 @@ def search_paper(query:str,limit:int=5):
     if response.status_code==200:
         return response.json()
     else:
-        print( f'Unable to process request at the momment {response.status_code}-{response.text}')
-        return []
+        # HuggingFace search failed — fall back to web_search on arXiv
+        fallback_query = f"site:arxiv.org {query}"
+        fallback_results = _web_search(fallback_query, num_results=5)
+        return {"source": "web_search_fallback", "results": fallback_results}
 # results = search_paper(query="large language models", limit=3)
 
 
@@ -135,8 +137,10 @@ def read_paper(arxiv_id:str):
         
         
     except Exception as e:
-        paper_content='unknown'
-    
+        arxiv_url = f"https://arxiv.org/abs/{normalised_id}"
+        paper_content = smart_fetch(arxiv_url)
+        if not paper_content:
+            paper_content = f"Could not fetch paper. Try: {arxiv_url}"    
     return (f"TITLE : {title}\n\nPUBlISHED DATE: {date}\n\nAUTHOR NAMES :\n{'\n'.join(author_names)}\n\nCONTENT :\n{paper_content}")
 # text = read_paper("2108.07732")
 # print(text)
@@ -145,3 +149,4 @@ PAPER_REGISTRY={
     "paper_search":search_paper,
     "read_paper":read_paper,
 }
+
