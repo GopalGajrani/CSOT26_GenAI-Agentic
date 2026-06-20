@@ -10,6 +10,7 @@
 - Use `read_paper` with the arxiv_id from search results — do not guess IDs
 - If `read_paper` returns 404, fall back to `web_fetch` on arxiv.org/abs/...
 - Do not use web_search when paper_search is the right tool
+- Use paper tools for academic questions (not just web search)
 
 ## Research notes
 - Save new content with `write_file` to `notes/`
