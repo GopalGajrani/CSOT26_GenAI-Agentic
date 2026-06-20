@@ -59,7 +59,7 @@ class Agent:
     """Core agent: loop, tools, sessions. No UI."""
 
     def __init__(self, workspace: str = ".", session_id: str | None = None):
-        self.workspace = os.path.abspath(workspace)
+        self.workspace = WORKSPACE_ROOT   # always locked to week_3/project/
         # TODO: session_id, load messages
 
         self.tool_registry = ALL_TOOLS_REGISTRY
@@ -256,21 +256,34 @@ def build_system_prompt() -> str:
 
 def main():
     session_id = None
+    tui_mode = False
 
-    # Support:  python build2_agent_class.py --session <id>
+    # Check if the user wants to run the Textual UI
+    if "--tui" in sys.argv:
+        tui_mode = True
+        sys.argv.remove("--tui")
+
+    # Support:  python agent.py --session <id>
     if "--session" in sys.argv:
         idx = sys.argv.index("--session")
         if idx + 1 < len(sys.argv):
             session_id = sys.argv[idx + 1]
             sys.argv = sys.argv[:idx] + sys.argv[idx + 2:]  # strip flag + value
 
-    agent = REPLAgent(session_id=session_id)
-
-    if len(sys.argv) > 1:                          # one-shot prompt
+    # If the user passed a one-shot prompt (e.g. python agent.py "hello")
+    if len(sys.argv) > 1:                          
+        agent = REPLAgent(session_id=session_id)
         print(agent.run_once(" ".join(sys.argv[1:])))
         return
 
-    agent.run()
+    # Otherwise, launch either the TUI or the standard REPL terminal
+    if tui_mode:
+        from tui import TUIAgent
+        app = TUIAgent(session_id=session_id)
+        app.run()
+    else:
+        agent = REPLAgent(session_id=session_id)
+        agent.run()
 
 
 if __name__ == "__main__":
