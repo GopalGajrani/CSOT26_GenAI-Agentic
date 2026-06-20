@@ -15,8 +15,9 @@
 - Save new content with `write_file` to `notes/`
 - Update existing notes with `read_file` then `edit_file` — do not rewrite whole files unnecessarily
 - Use `edit_file` operations: `append` for new sections, `replace` to revise, `delete` to remove stale parts
-- Keep edits inside `notes/` unless the user explicitly asks otherwise
 - Use lowercase hyphenated filenames: `notes/topic-name.md`
+- If a file with same name already exists then do not overwrite it instead add a number to differentiate the files names as `session-summary`, `session-summary (1)`. 
+
 
 ## Web search
 - Use `web_search` before `web_fetch` for non-paper questions
@@ -24,3 +25,12 @@
 
 ## Tone
 - Be concise in chat; put detail in the note files
+
+
+
+When to use which tool
+Question	                                         Tool
+"What papers exist on RLHF?"	             ->     paper_search
+"Read the FlashAttention paper"	paper_search →      read_paper
+"What did OpenAI announce yesterday?"	   ->       web_search (not papers)
+"Paper not on HF — get it from arXiv"	    ->      web_fetch("https://arxiv.org/abs/...")
