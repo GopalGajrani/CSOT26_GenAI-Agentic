@@ -113,3 +113,9 @@ def web_search(query: str, num_results: int = 5) -> str:
         return json.dumps(results)
     except Exception as e:
         return f"Error executing web search: {str(e)}"
+
+
+WEB_REGISTRY={
+    "web_search":web_search,
+    "web_fetch":smart_fetch,
+}
