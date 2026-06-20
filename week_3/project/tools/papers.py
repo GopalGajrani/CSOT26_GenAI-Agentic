@@ -12,9 +12,9 @@ API docs: week_3/3_paper_tools.md
 # TODO: implement — see Build 2
 import requests
 import os
-script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/builds
-week_3_parent = os.path.dirname(script_location)
-WORKSPACE_ROOT = os.path.join(week_3_parent, "project")
+script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/project/tools
+WORKSPACE_ROOT = os.path.dirname(script_location)  #.../week_3/project
+# WORKSPACE_ROOT = os.path.join(week_3_parent, "project")
 
 env_file_path = os.path.join(WORKSPACE_ROOT, ".env")
 
@@ -29,7 +29,7 @@ PAPER_SCHEMA = [
     {
         "type": "function",
         "function": {
-            "name": "search_paper",
+            "name": "paper_search",
             "description": (
                 "Search for academic research papers on Hugging Face Daily Papers. "
                 "Use this tool to find relevant papers, discover concepts, and obtain Arxiv IDs."
@@ -118,7 +118,6 @@ def read_paper(arxiv_id:str):
         author_names = [author.get('name') for author in paper_content.get('authors', [])]
 
         # print(author_names)
-# Output: ['Jacob Austin', 'Augustus Odena', 'Maxwell Nye', ...]
     except Exception as e:
         title='unkown'
         date='unkown_date'
@@ -143,6 +142,6 @@ def read_paper(arxiv_id:str):
 # print(text)
 
 PAPER_REGISTRY={
-    "search_paper":search_paper,
+    "paper_search":search_paper,
     "read_paper":read_paper,
 }
