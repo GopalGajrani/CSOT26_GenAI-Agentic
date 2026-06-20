@@ -36,8 +36,8 @@ class TUIAgent(App, Agent):
 
     BINDINGS = [
         ("ctrl+l", "clear_display", "Clear Display"),
-        ("ctrl+k", "clear_history", "Clear History"),
-        ("ctrl+q", "quit", "Quit"),
+        ("ctrl+h", "clear_history", "Clear History"),
+        ("ctrl+0", "quit", "Quit"),
         
     ]
     def __init__(self, session_id=None):
@@ -56,7 +56,7 @@ class TUIAgent(App, Agent):
         """Run when the app starts."""
         log = self.query_one(RichLog)
         log.write(f"Research Desk [{self.session_id}] started!")
-        log.write("Type your research request below. Press 'd' for dark mode, or 'q' to safely quit.")
+        log.write("Type your research request below. Press 'ctrl+h' to clear history,'ctrl+l' to clear display, or 'ctrl+0' to safely quit.")
         log.write("-" * 50)
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -121,7 +121,7 @@ class TUIAgent(App, Agent):
         self.call_from_thread(log.write, "\n[System] Asking agent to save final notes before exiting...")
         
         try:
-            # The exact same hidden prompt we used in REPLAgent
+           
             self.chat(
                 "We are ending the session now. Please write a highly detailed bulleted summary "
                 "covering EVERYTHING we discussed in this entire session. Use the write_file tool "
