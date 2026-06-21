@@ -90,7 +90,7 @@ class Agent:
         
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(json.dumps(session_dict, indent=2))
-            return(f"Session saved successfully to .agent/sessions/{self.session_id}.json")            
+        return None            
     # pass
 
     def load_session(self, session_id: str) -> dict:
@@ -122,15 +122,37 @@ class Agent:
             "title": "Untitled",
             "messages": [system_msg],
         }
+    def _generate_title(self) -> str:
+        """Call the LLM to generate a short 3-5 word title based on the conversation."""
+        prompt = "Please read the messages above and propose a very short, 3-5 word title for this conversation. Reply with ONLY the title and nothing else."
+        temp_messages = self.messages + [{"role": "user", "content": prompt}]
+        try:
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=temp_messages,
+                max_tokens=20
+            )
+            title = response.choices[0].message.content.strip().strip('"\'')
+            return title if title else "Untitled"
+        except Exception:
+            return "Untitled"
+
     def chat(self, user_message: str) -> str:
-        # TODO: append user msg, _run_loop(), save session, return answer
         self.messages.append({"role":"user","content":user_message})
 
-        answer=self._run_loop()
-        self.save_session(title=user_message[:5])
-        return answer
-        
-        pass
+        try:
+            answer = self._run_loop()
+            return answer
+        finally:
+            # Auto-title on the first real exchange
+            if len(self.messages) >= 3:
+                session_data = self.load_session(self.session_id)
+                current_title = session_data.get("title", "Untitled")
+                if current_title == "Untitled":
+                    current_title = self._generate_title()
+                self.save_session(title=current_title)
+            else:
+                self.save_session(title="Untitled")
 
     def run_once(self, prompt: str) -> str:
         return self.chat(prompt)
@@ -196,16 +218,16 @@ class Agent:
             return json.dumps({"error":f"invalid json arguments"})
         if name in self.tool_registry:
             try:
-                result=self.tool_registry[name](**args)
-                if isinstance(result, str):           #if tool call is resolve_path then it already return a string 
+                result = self.tool_registry[name](**args)
+                if isinstance(result, str):
+                    if result.startswith("Error"):
+                        return json.dumps({"tool_error": result})
                     return result
-                
                 return json.dumps(result)
-            except:
-                return json.dumps({"error":"tool execution failed"})
+            except Exception as e:
+                return json.dumps({"tool_error": f"Tool execution crashed: {str(e)}"})
         else:
-            return json.dumps("no such tool found in tool_Registry")
-        # pass
+            return json.dumps({"tool_error": "no such tool found in tool_registry"})
 
     def _emit(self, event: str, **data) -> None:
         """Override in REPLAgent/TUIAgent for tool logging."""
@@ -225,14 +247,36 @@ class REPLAgent(Agent):
                 break
             if not user_input or user_input in ("/quit", "/exit"):
                 print("\n[System] Asking agent to save final notes before exiting...")
-                
-                # Send a hidden prompt to force the agent to save notes
                 self.chat("We are ending the session now. Please quickly summarize what we discussed and use your write_file tool to save it into the notes/ folder.")
-                
                 print("[System] Goodbye!")
-
-
                 break
+                
+            if user_input == "/sessions":
+                folder = os.path.join(self.workspace, ".agent", "sessions")
+                if not os.path.exists(folder):
+                    print("No sessions found.")
+                else:
+                    sessions = glob_module.glob(os.path.join(folder, "*.json"))
+                    print(f"Found {len(sessions)} sessions:")
+                    for s in sessions:
+                        try:
+                            with open(s, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                                print(f" - {data.get('id')}: {data.get('title')}")
+                        except:
+                            pass
+                print()
+                continue
+                
+            if user_input.startswith("/resume "):
+                new_id = user_input.split(" ", 1)[1].strip()
+                print(f"[System] Resuming session {new_id}...")
+                session_data = self.load_session(new_id)
+                self.session_id = new_id
+                self.messages = session_data.get("messages", [])
+                print("[System] Session restored.\n")
+                continue
+
             print(self.chat(user_input))
             print()
 

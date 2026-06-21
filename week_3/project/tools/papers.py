@@ -140,7 +140,11 @@ def read_paper(arxiv_id:str):
         arxiv_url = f"https://arxiv.org/abs/{normalised_id}"
         paper_content = smart_fetch(arxiv_url)
         if not paper_content:
-            paper_content = f"Could not fetch paper. Try: {arxiv_url}"    
+            import json
+            return json.dumps({
+                "error": "404 and no fallback",
+                "suggestion": f"Try specific arXiv URL {arxiv_url}"
+            })
     return (f"TITLE : {title}\n\nPUBlISHED DATE: {date}\n\nAUTHOR NAMES :\n{'\n'.join(author_names)}\n\nCONTENT :\n{paper_content}")
 # text = read_paper("2108.07732")
 # print(text)
