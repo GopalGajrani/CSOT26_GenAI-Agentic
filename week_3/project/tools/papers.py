@@ -123,6 +123,7 @@ def read_paper(arxiv_id:str):
     except Exception as e:
         title='unkown'
         date='unkown_date'
+        author_names = []
     
     
     
@@ -145,8 +146,19 @@ def read_paper(arxiv_id:str):
                 "error": "404 and no fallback",
                 "suggestion": f"Try specific arXiv URL {arxiv_url}"
             })
-    return (f"TITLE : {title}\n\nPUBlISHED DATE: {date}\n\nAUTHOR NAMES :\n{'\n'.join(author_names)}\n\nCONTENT :\n{paper_content}")
-# text = read_paper("2108.07732")
+    MAX_CHARS = 12000
+    if len(paper_content) > MAX_CHARS:
+        paper_content = paper_content[:MAX_CHARS] + "\n\n[...truncated due to token limits]"
+        
+    author_str = '\n'.join(author_names)
+    import json
+    return json.dumps({
+        "title": title,
+        "date": date,
+        "authors": author_str,
+        "url": md_url,
+        "content": paper_content
+    })# text = read_paper("2108.07732")
 # print(text)
 
 PAPER_REGISTRY={

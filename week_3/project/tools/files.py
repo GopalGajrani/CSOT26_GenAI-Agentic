@@ -23,7 +23,7 @@ def resolve_path(path: str) -> str:
         path = path[len("project/"):]
     elif path.startswith("project\\"):
         path = path[len("project\\"):]
-    fullpath=os.path.join(WORKSPACE_ROOT,path)
+    fullpath=os.path.abspath(os.path.join(WORKSPACE_ROOT,path))
     if not fullpath.startswith(WORKSPACE_ROOT):
         raise ValueError("Path escapes workspace")
     return fullpath      
