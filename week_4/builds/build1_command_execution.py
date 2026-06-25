@@ -35,7 +35,6 @@ DESTRUCTIVE_PATTERNS = (
     "pip install", "npm install", "curl ", "sudo ", "chmod ",
 )
 
-
 def paths_within_sandbox(command: str, workspace_root: str) -> bool:
     """
     Token-level check: no path-looking argument in `command` may resolve
@@ -46,8 +45,21 @@ def paths_within_sandbox(command: str, workspace_root: str) -> bool:
     """
     # TODO: shlex.split(command); for tokens that look like paths, resolve
     # them against workspace_root and reject if they escape it.
-    _ = (command, workspace_root)
-    pass
+    try:
+        args=shlex.split(command,comments=True,posix=True)
+    except:
+        return False
+    
+    abs_path=os.path.realpath(workspace_root)
+    for token in args:
+        if '/' in token or '//' in token or  token.startswith('.'):
+            token_path=os.path.join(abs_path,token)
+            resolved_tkn_path=os.path.abspath(token_path)
+            if os.path.commonpath([resolved_tkn_path,abs_path])!=abs_path:
+                return False
+    return True 
+    # _ = (command, workspace_root)
+    # pass
 
 
 def classify_command(command: str) -> str:
@@ -58,8 +70,32 @@ def classify_command(command: str) -> str:
     Default to "ask" for anything unclassified — see Lesson 1.
     """
     # TODO: implement
+    try:
+        args=shlex.split(command,comments=True)
+    except:
+        return "ask"
+    
+    if not args:
+        return "ask"
+    if args[0] not in READ_ONLY_PREFIXES:
+        return "ask"
+    for token in args:
+        if ";" in token or "|" in token or ">" in token or "&" in token:
+            return "ask"
+    return "read_only"
     _ = command
     pass
+
+def truncate(content):
+    if len(content) >MAX_OUTPUT_CHARS:
+        return(content[:MAX_OUTPUT_CHARS] + "\n .....[OUTPUT TRUNCATED......")
+        
+    else:
+        return content
+def was_truncate(content):
+    if len(truncate(content))==len(content):
+        return False
+    return True 
 
 
 def run_command(command: str, cwd: str = WORKSPACE_ROOT, timeout: int = TIMEOUT_DEFAULT) -> dict:
@@ -76,7 +112,38 @@ def run_command(command: str, cwd: str = WORKSPACE_ROOT, timeout: int = TIMEOUT_
     """
     # TODO: implement using subprocess.run(..., shell=True, cwd=cwd,
     # timeout=timeout, capture_output=True, text=True)
-    _ = (command, cwd, timeout)
+    
+    if not paths_within_sandbox(command,cwd):
+        return ({"error":f"Security violation: Target directory '{cwd}' is outside the sandbox."})
+    if classify_command(command) !="read_only":
+        print("\nThis command may modify the files in your directory !")
+        print(f"Kindly approve the {command} by saying 'y' for yes and 'n' for no.")
+        approval=input("Enter y/n : ").lower().strip()
+        if approval !='y':
+            return {"error":"Sorry the approval for command was rejected. "}
+    try:
+        
+        
+        result=subprocess.run(command,capture_output=True,text=True,shell=True,cwd=cwd,timeout=timeout)
+
+        output=truncate(result.stdout)
+        error=result.stderr
+
+        return{
+            "stdout":truncate(output),
+            "stderr":truncate(error),
+            "exit_code":result.returncode,
+            "is_truncated":was_truncate(output) and was_truncate(error)
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {"exit_code":e.returncode,"stderr":e.stderr}
+    except subprocess.TimeoutExpired:
+        return {"error": f"Command timed out after {timeout} seconds."}
+    except Exception as e:
+        return {"error":f"and unexpected error occured : {e}"}
+
+    # _ = (command, cwd, timeout)
     pass
 
 
@@ -113,7 +180,10 @@ TOOLS = [
 
 if __name__ == "__main__":
     print("Read-only command (should run immediately):")
-    print(run_command("git log --oneline -5"))
-
-    print("\nDestructive command (should pause and ask for approval):")
-    print(run_command("rm -rf /tmp/does-not-exist-example"))
+    # print(run_command("git log --oneline -5"))
+    print(run_command("Read file"))
+    print(run_command('echo "temp" > test.txt  &&  del test.txt  &&  echo File deleted successfully!'))
+    print(run_command("echo \"temp\" > test.txt"))
+    print(run_command("del test.txt"))
+    # print("\nDestructive command (should pause and ask for approval):")
+    # print(run_command("rm -rf /tmp/does-not-exist-example"))
