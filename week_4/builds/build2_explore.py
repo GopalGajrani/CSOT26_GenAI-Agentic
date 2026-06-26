@@ -32,6 +32,7 @@ Run directly: grep for a common pattern, then outline the first match.
 
 import ast
 import os
+import re
 
 WORKSPACE_ROOT = os.path.abspath(os.environ.get("WORKSPACE_ROOT", "."))
 MAX_GREP_RESULTS = 50
@@ -41,9 +42,11 @@ EXCLUDE_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", 
 def resolve_path(path: str) -> str | None:
     """Resolve `path` inside WORKSPACE_ROOT; return None if it escapes."""
     # TODO: implement (same idea as Week 3's resolve_path)
-    _ = path  # silence "unused parameter" until implemented
-    pass
 
+    fullpath=os.path.abspath(os.path.join(WORKSPACE_ROOT,path))
+    if os.path.commonpath([WORKSPACE_ROOT, fullpath]) != WORKSPACE_ROOT:
+        return None 
+    return fullpath    
 
 def grep(
     pattern: str,
@@ -60,9 +63,52 @@ def grep(
     Skip EXCLUDE_DIRS and obviously binary files. Cap at `max_results`
     but report the true total even when truncated — see Lesson 1/3.
     """
-    # TODO: implement (re.search per line, or shell out to grep/ripgrep)
-    _ = (pattern, path, case_sensitive, max_results)
-    pass
+   
+    flags = 0 if case_sensitive else re.IGNORECASE
+    try:
+        regex = re.compile(pattern, flags)
+    except re.error as e:
+        raise ValueError(f"Invalid regex pattern '{pattern}': {e}")
+
+    matches = []
+    total_matches = 0
+
+    files_to_search = []
+    if os.path.isfile(path):
+        files_to_search.append(path)
+    elif os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+            
+            for file in files:
+                files_to_search.append(os.path.join(root, file))
+    else:
+        
+        return {"matches": [], "truncated": False, "total_matches": 0}
+
+    for filepath in files_to_search:
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                for line_num, line in enumerate(f, 1):
+                    if regex.search(line):
+                        total_matches += 1
+                        if len(matches) < max_results:
+                            matches.append({
+                                "file": filepath,
+                                "line": line_num,
+                                "text": line.rstrip('\n') 
+                            })
+        except UnicodeDecodeError:
+            pass
+        except OSError:
+            pass
+
+    return {
+        "matches": matches,
+        "truncated": total_matches > max_results,
+        "total_matches": total_matches
+    }
 
 
 def list_definitions(path: str) -> dict:
@@ -86,10 +132,60 @@ def list_definitions(path: str) -> dict:
     "method" instead of "function") so callers can see structure without
     a second tool call.
     """
-    # TODO: implement using ast.parse + ast.walk or a manual NodeVisitor
-    _ = (path, ast)  # silence "unused" hints until implemented
-    pass
+    resolved_path = resolve_path(path)
+    if resolved_path is None:
+        return {"error": f"Path escapes the workspace sandbox: {path}"}
 
+    try:
+        with open(resolved_path, 'r', encoding='utf-8') as f:
+            source = f.read()
+    except FileNotFoundError:
+        return {"error": f"File not found: {path}"}
+    except Exception as e:
+        return {"error": f"Error reading file: {str(e)}"}
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        return {"error": f"SyntaxError: {e.msg} on line {e.lineno}"}
+
+    definitions = []
+    
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            definitions.append({
+                "kind": "function",
+                "name": node.name,
+                "line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno)
+            })
+            
+        elif isinstance(node, ast.AsyncFunctionDef):
+            definitions.append({
+                "kind": "async function",
+                "name": node.name,
+                "line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno)
+            })
+            
+        elif isinstance(node, ast.ClassDef):
+            definitions.append({
+                "kind": "class",
+                "name": node.name,
+                "line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno)
+            })
+            
+            for subnode in node.body:
+                if isinstance(subnode, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    definitions.append({
+                        "kind": "method",
+                        "name": subnode.name,
+                        "line": subnode.lineno,
+                        "end_line": getattr(subnode, "end_lineno", subnode.lineno)
+                    })
+
+    return {"definitions": definitions}
 
 TOOLS = [
     {
