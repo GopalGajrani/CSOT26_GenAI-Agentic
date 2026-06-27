@@ -80,7 +80,7 @@ def mark_todo(todo_id: int, status: str, evidence: str = None) -> str:
     raise ValueError(f"Todo with id {todo_id} not found.")
 
 # 4. Write the TOOLS schema for the LLM
-TOOLS = [
+PLAN_SCHEMA= [
     {
         "type": "function",
         "function": {
@@ -139,3 +139,11 @@ TOOLS = [
         }
     }
 ]
+
+PLAN_REGISTRY={
+    "get_todos":get_todos,
+    "mark_todo":mark_todo,
+    "_save_todos":_save_todos,
+    "_load_todos":_load_todos,
+    "add_todos":add_todos
+}

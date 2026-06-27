@@ -13,6 +13,7 @@ Implement:
 
 import os
 import fnmatch
+from tools.exec import ask_approval
 script_location = os.path.dirname(os.path.abspath(__file__)) # .../week_3/project/tools
 WORKSPACE_ROOT = os.path.dirname(script_location)     #week_3/project
 
@@ -76,7 +77,14 @@ def write_file(path: str, content: str) -> dict:
                 counter += 1
             is_path = f"{base} ({counter}){ext}"
         
-        
+        print(f"\n[Agent] wants to create/write file: {is_path}")
+        approved = ask_approval(
+            warning=f"[Agent] wants to create/write file: {is_path}",
+            prompt="Approve file creation?"
+        )
+        if not approved:
+            return {"status": "rejected", "message": "The user rejected creating this file."}
+
         os.makedirs(os.path.dirname(is_path),exist_ok=True)
         with open(is_path,"w") as f:
             f.write(content)
@@ -131,18 +139,26 @@ def edit_file(
             return {"status":"error","message":f"unknown operation '{op}'. Use: replace, delete, append, insert"}
          
 
-        # write the changes in the original file 
-        resolved = resolve_path(path)
-        with open(resolved, "w") as f:
-            f.writelines(lines)
-
-        # Built a simple diff preview to show what changed
+        # Build a simple diff preview to show what changed
         diff_lines = []
         for line in before_lines:
             diff_lines.append(f"- {line.rstrip()}")
         for line in new_lines:
             diff_lines.append(f"+ {line.rstrip()}")
         diff_preview = "\n".join(diff_lines) if diff_lines else "(no diff — append or delete)"
+
+        # Pause and ask for human approval before applying the destructive edit
+        approved = ask_approval(
+            warning=f"[Agent] wants to '{op}' in {path} (lines {start_line}-{end_line}):\n{diff_preview}",
+            prompt="Approve this edit?"
+        )
+        if not approved:
+            return {"status": "rejected", "message": "The user rejected this file edit."}
+
+        # write the changes in the original file 
+        resolved = resolve_path(path)
+        with open(resolved, "w") as f:
+            f.writelines(lines)
 
         return {
             "status": "success",

@@ -2,6 +2,38 @@ import os
 import shlex
 import subprocess
 
+# -----------------------------------------------------------------------
+# Approval bridge — lives here so no extra file is needed.
+# The TUI overrides _approval_callback via register_approval_callback().
+# REPL uses the default which just calls print() + input().
+# -----------------------------------------------------------------------
+def _default_ask(warning: str, prompt: str) -> bool:
+    print(warning)
+    while True:
+        try:
+            choice = input(f"{prompt} [y/n]: ").strip().lower()
+            if choice == 'y':
+                return True
+            elif choice == 'n':
+                return False
+            else:
+                print("Please enter 'y' or 'n'.")
+        except (EOFError, KeyboardInterrupt):
+            return False
+
+_approval_callback = _default_ask
+
+def ask_approval(warning: str, prompt: str = "Approve?") -> bool:
+    """Call whichever approval handler is currently registered."""
+    return _approval_callback(warning, prompt)
+
+def register_approval_callback(fn) -> None:
+    """Override the approval handler. Called by TUIAgent at startup."""
+    global _approval_callback
+    _approval_callback = fn
+
+# -----------------------------------------------------------------------
+
 WORKSPACE_ROOT = os.path.abspath(os.environ.get("WORKSPACE_ROOT", "."))
 TIMEOUT_DEFAULT = 10
 MAX_OUTPUT_CHARS = 8_000
@@ -99,12 +131,13 @@ def run_command(command: str, cwd: str = WORKSPACE_ROOT, timeout: int = TIMEOUT_
     
     if not paths_within_sandbox(command,cwd):
         return ({"error":f"Security violation: Target directory '{cwd}' is outside the sandbox."})
-    if classify_command(command) !="read_only":
-        print("\nThis command may modify the files in your directory !")
-        print(f"Kindly approve the {command} by saying 'y' for yes and 'n' for no.")
-        approval=input("Enter y/n : ").lower().strip()
-        if approval !='y':
-            return {"error":"Sorry the approval for command was rejected. "}
+    if classify_command(command) != "read_only":
+        approved = ask_approval(
+            warning=f"\n[Agent] wants to run a DESTRUCTIVE command:\n  $ {command}\nThis may modify files in your directory!",
+            prompt="Approve this command?"
+        )
+        if not approved:
+            return {"error": "Command rejected by user."}
     try:
         
         
@@ -131,7 +164,7 @@ def run_command(command: str, cwd: str = WORKSPACE_ROOT, timeout: int = TIMEOUT_
     pass
 
 
-TOOLS = [
+EXEC_SCHEMA = [
     {
         "type": "function",
         "function": {
@@ -161,3 +194,6 @@ TOOLS = [
     }
 ]
 
+EXEC_REGISTRY={
+    "run_command":run_command,
+}

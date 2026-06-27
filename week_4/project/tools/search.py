@@ -155,7 +155,7 @@ def list_definitions(path: str) -> dict:
 
     return {"definitions": definitions}
 
-TOOLS = [
+SEARCH_SCHEMA= [
     {
         "type": "function",
         "function": {
@@ -201,3 +201,7 @@ TOOLS = [
     },
 ]
 
+SEARCH_REGISTRY={
+    "grep":grep,
+    "list_definitions" :list_definitions
+}

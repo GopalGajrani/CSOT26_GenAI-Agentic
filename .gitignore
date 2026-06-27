@@ -7,3 +7,11 @@ week_3/RUBRIC.md
 week_4/RUBRIC.md
 week_4/EVALUATION.md
 grading
+
+
+
+week_4/project/.agent/
+
+__pycache__/
+
+
