@@ -159,14 +159,21 @@ class Agent:
         iterations = 0
         while iterations < MAX_ITERATIONS:
             iterations += 1
-            response = client.chat.completions.create(
-                model=MODEL,
-                messages=self.messages,
-                tools=self.schema,
-                tool_choice="auto"
-            )
-
-            response_message = response.choices[0].message
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=self.messages,
+                    tools=self.schema,
+                    tool_choice="auto"
+                )
+                
+                if not response or not getattr(response, "choices", None):
+                    return f"[AGENT ERROR]: The API returned an empty or invalid response. Please try again or check your API credits. Raw response: {response}"
+                    
+                response_message = response.choices[0].message
+                
+            except Exception as e:
+                return f"[AGENT ERROR]: The OpenAI API call failed: {str(e)}"
 
             # Build the assistant message dict
             msg_dict = {
