@@ -212,7 +212,7 @@ class Agent:
 
             # Otherwise, dispatch each tool call
             for tc in response_message.tool_calls:
-                print(response_message.tool_calls)
+                # print(response_message.tool_calls)
                 self._emit("tool_call", name=tc.function.name)
                 result_str = self.dispatch(tc)
                 self.messages.append({
