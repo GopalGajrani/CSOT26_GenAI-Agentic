@@ -93,13 +93,34 @@ def classify_command(command: str) -> str:
     
     if not args:
         return "ask"
-    if args[0] not in READ_ONLY_PREFIXES:
+        
+    for p in DESTRUCTIVE_PATTERNS:
+        if p in command:
+            return "ask"
+            
+    is_safe = False
+    
+    # 1. Simple prefix match
+    if args[0] in READ_ONLY_PREFIXES:
+        is_safe = True
+        
+    # 2. Handle "git -C path log"
+    if args[0] == "git":
+        if "log" in args or "diff" in args or "status" in args or "show" in args or "blame" in args:
+            is_safe = True
+            
+    # 3. Handle "python -m pytest"
+    if args[0] == "python" and "-m" in args and "pytest" in args:
+        is_safe = True
+        
+    if not is_safe:
         return "ask"
+        
     for token in args:
         if ";" in token or "|" in token or ">" in token or "&" in token:
             return "ask"
+            
     return "read_only"
-    _ = command
     pass
 
 def truncate(content):
